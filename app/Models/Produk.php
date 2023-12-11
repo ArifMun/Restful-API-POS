@@ -15,4 +15,14 @@ class Produk extends Model
         'harga',
         'stok',
     ];
+
+    public function keranjang()
+    {
+        return $this->hasMany(Keranjang::class, 'produk_id');
+    }
+
+    public function transaksi()
+    {
+        return $this->hasMany(Transaksi::class, 'produk_id');
+    }
 }

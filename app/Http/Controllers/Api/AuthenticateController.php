@@ -25,22 +25,37 @@ class AuthenticateController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'nama' => 'required',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:8',
-            'role' => 'required',
+            'nama'      => 'required',
+            'email'     => 'required|email|unique:users',
+            'password'  => 'required|min:8',
+            'role'      => 'required',
         ]);
 
-        $user = User::create([
-            'nama' => $request->input('nama'),
-            'email' => $request->input('email'),
-            'password' => Hash::make($request->input('password')),
-            'role' => $request->input('role'),
-        ]);
+        if ($validator->fails()) {
+            return \response(['error' => $validator->errors(), 'Data tidak tersimpan!']);
+        }
+
+        if (!Auth::user() || Auth::user()->role == 'pembeli') {
+
+            $user = User::create([
+                'nama'      => $request->nama,
+                'email'     => $request->email,
+                'password'  => Hash::make($request->password),
+                'role'      => 'pembeli',
+            ]);
+        } else if (Auth::user()->role == 'penjual') {
+
+            $user = User::create([
+                'nama'      => $request->nama,
+                'email'     => $request->email,
+                'password'  => Hash::make($request->password),
+                'role'      => $request->role,
+            ]);
+        }
 
         $accessToken = $user->createToken('authToken')->accessToken;
 
-        return response()->json(['user' => $user, 'access_token' => $accessToken, 'message' => 'Data tersimpan!'], 201);
+        return response(['data' => $user, 'access_token' => $accessToken, 'message' => 'Data tersimpan!'], 201);
     }
 
     /**
@@ -60,7 +75,19 @@ class AuthenticateController extends Controller
 
         $accessToken = auth()->user()->createToken('authToken')->accessToken;
 
-        return \response(['user' => \auth()->user(), 'access_token' => $accessToken]);
+        return \response([
+            'data' => \auth()->user(),
+            'access_token' => $accessToken
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $tokenDelete = \auth()->user()->tokens()->delete();
+        return \response([
+            'data' => \auth()->user(),
+            'message' => 'anda berhasil logout'
+        ]);
     }
 
     public function show(User $user)
